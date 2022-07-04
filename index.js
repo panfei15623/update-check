@@ -3,7 +3,7 @@ const {URL} = require('url');
 const {join} = require('path');
 const fs = require('fs');
 const {promisify} = require('util');
-const {tmpdir} = require('os');
+const {tmpdir} = require('os'); // 操作系统的默认临时文件目录
 
 // Packages
 const registryUrl = require('registry-url');
@@ -28,6 +28,7 @@ const getFile = async (details, distTag) => {
 		name = `${details.scope}-${name}`;
 	}
 
+	// 返回的是 path.join(rootDir, 'update-check', name)
 	return join(subDir, name);
 };
 
@@ -156,8 +157,8 @@ const getDetails = name => {
 	if (name.includes('/')) {
 		const parts = name.split('/');
 
-		spec.scope = parts[0];
-		spec.name = parts[1];
+		spec.scope = parts[0]; // npm 包的命名空间
+		spec.name = parts[1]; // npm 包的名字
 	} else {
 		spec.scope = null;
 		spec.name = name;
@@ -166,14 +167,23 @@ const getDetails = name => {
 	return spec;
 };
 
+/**
+ * 入口
+ * @param {*} pkg 项目的 package.json
+ * @param {*} config 
+ * @returns 
+ */
 module.exports = async (pkg, config) => {
 	if (typeof pkg !== 'object') {
 		throw new Error('The first parameter should be your package.json file content');
 	}
 
+	// 得到包名的详细信息，包含命名空间和名字
 	const details = getDetails(pkg.name);
 	const time = Date.now();
 	const {distTag, interval} = Object.assign({}, defaultConfig, config);
+
+	// 得到path.join(os.tmpdir, 'update-check', `${details.name}-${distTag}.json`);
 	const file = await getFile(details, distTag);
 
 	let latest = null;
